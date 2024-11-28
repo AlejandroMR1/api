@@ -61,3 +61,49 @@ h1 {
     color: #333;
     margin-bottom: 20px;
 }
+
+.add-employee-button {
+    background-color: #008081; /* Un verde que denota acción positiva */
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    border: radius 1px;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    
+  }
+  
+  .add-employee-button:hover {
+    background-color:  #002e2e; /* Un verde más oscuro al hacer hover */
+    transform: scale(1); /* Le da un pequeño efecto de aumento */
+    border: radius 1px;
+  }
+  
+  .add-employee-button:focus {
+    outline: none;
+    box-shadow: 0 0 5px #002e2e; /* Un pequeño resplandor verde para el foco */
+  }
+  
+  .x-button{
+    background-color: #008081; /* Un verde que denota acción positiva */
+    color: white;
+    border-radius: 5px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    border: radius 1px;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+  }
+  .x-button:hover {
+    background-color:  #002e2e; /* Un verde más oscuro al hacer hover */
+    transform: scale(1); /* Le da un pequeño efecto de aumento */
+    border: radius 1px;
+  }
+  
+  .x-button:focus {
+    outline: none;
+    box-shadow: 0 0 5px #002e2e; /* Un pequeño resplandor verde para el foco */
+  }
+  

@@ -1,18 +1,23 @@
-import React from 'react'
+import React from 'react';
 import Header from './Header';
 import './Home.css';
-import Aside from './Aside';
 import Footer from './Footer';
+import { Link } from 'react-router-dom';
 
 const Home = () => {
     return (
-
-        <div>
-            <Header/>
-            <Aside/>
-            <Footer/>
+        <div className="home-container">
+            <Header />
+            <div className="links-section">
+                <div className="links-grid">
+                    <Link to="/attendance" className="link-item">Asistencia</Link>
+                    <Link to="/reportes" className="link-item">Reportes</Link>
+                    <Link to="/employees" className="link-item">Empleados</Link>
+                </div>
+            </div>
+            <Footer />
         </div>
-    )
+    );
 }
 
-export default Home
+export default Home;

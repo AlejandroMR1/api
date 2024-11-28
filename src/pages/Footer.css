@@ -4,11 +4,10 @@ footer {
     align-items: center;
     padding: 10px;
     background-color: #004646;
-    position: fixed;
     width: auto;
     height: auto;
     position:relative;
-
+    
   }
 
   footer h1 {
