@@ -1,0 +1,27 @@
+.attendance-table {
+    margin: 60px auto;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    border-collapse: collapse;
+}
+
+.attendance-table th, .attendance-table td {
+
+    padding: 8px;
+}
+
+.attendance-table th {
+
+    text-align: center;
+}
+
+.presente{
+
+}
+
+.ausente{
+
+}
+
+.tardanza{
+
+}
