@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, Timestamp } from "firebase/firestore";
 import { firestore } from '../firebase';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -20,16 +20,21 @@ const ReporteUno = () => {
   useEffect(() => {
     const obtenerEmpleados = async () => {
       try {
-        const empleadosRef = collection(firestore, 'empleados');
+        const empleadosRef = collection(firestore, 'reportes');
         const snapshot = await getDocs(empleadosRef);
+        
+        // Depuración: verificar datos reales
+        console.log("Snapshot de empleados:", snapshot.docs.map(doc => doc.data()));
+        
         const listaEmpleados = snapshot.docs.map(doc => ({
           id: doc.id,
-          nombre: doc.data().nombre
-        }));
+          nombre: doc.data().nombreEmpleado || doc.data().nombre || 'Sin nombre'
+        })).filter(empleado => empleado.nombre !== 'Sin nombre');
+        
         setEmpleados(listaEmpleados);
       } catch (error) {
         console.error("Error al cargar empleados:", error);
-        setError("No se pudo cargar la lista de empleados");
+        setError(`No se pudo cargar la lista de empleados: ${error.message}`);
       }
     };
 
@@ -38,37 +43,40 @@ const ReporteUno = () => {
 
   // Generar reporte
   const generarReporte = async () => {
-    // Reiniciar estados de error
     setError(null);
     setCargando(true);
 
     try {
-      // Validar fechas
       if (!fechaInicio || !fechaFin) {
         setError('Por favor, selecciona un rango de fechas');
         setCargando(false);
         return;
       }
 
-      // Convertir fechas a objetos Date para la consulta
-      const inicioDate = new Date(fechaInicio);
-      const finDate = new Date(fechaFin);
-      // Establecer la hora de fin al final del día
-      finDate.setHours(23, 59, 59, 999);
+      const inicioDate = Timestamp.fromDate(new Date(fechaInicio));
+      const finDate = Timestamp.fromDate(new Date(fechaFin));
+      finDate.seconds += 86399; // Agregar 23:59:59
 
-      // Construir consulta de asistencia con filtros
-      const consultaAsistencia = query(
-        collection(firestore, 'asistencia'),
+      // Construcción de consulta más flexible
+      const consultaBase = [
         where('fecha', '>=', inicioDate),
-        where('fecha', '<=', finDate),
-        ...(empleadoSeleccionado !== 'todos' 
-          ? [where('empleadoId', '==', empleadoSeleccionado)] 
-          : [])
+        where('fecha', '<=', finDate)
+      ];
+
+      // Agregar filtro de empleado si está seleccionado
+      if (empleadoSeleccionado !== 'todos') {
+        consultaBase.push(where('nombreEmpleado', '==', empleadoSeleccionado));
+      }
+
+      console.log(consultaBase);
+
+      const consultaAsistencia = query(
+        collection(firestore, 'reportes'),
+        ...consultaBase
       );
 
       const snapshot = await getDocs(consultaAsistencia);
       
-      // Verificar si hay registros
       if (snapshot.empty) {
         setError('No se encontraron registros para el rango de fechas seleccionado');
         setDatosReporte([]);
@@ -76,7 +84,6 @@ const ReporteUno = () => {
         return;
       }
 
-      // Procesar datos de asistencia
       const datos = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -87,18 +94,20 @@ const ReporteUno = () => {
       setCargando(false);
     } catch (error) {
       console.error("Error al generar reporte:", error);
-      setError("Ocurrió un error al generar el reporte");
+      setError(`Ocurrió un error al generar el reporte: ${error.message}`);
       setCargando(false);
     }
   };
 
-  // Procesar datos de asistencia
+  // Procesar datos de asistencia con más validaciones
   const procesarDatosAsistencia = (datos) => {
     return datos.map(registro => ({
-      nombreEmpleado: registro.nombreEmpleado,
-      fecha: registro.fecha instanceof Date 
-        ? registro.fecha.toLocaleDateString() 
-        : registro.fecha.toDate().toLocaleDateString(),
+      nombreEmpleado: registro.nombreEmpleado || 'Sin nombre',
+      fecha: registro.fecha 
+        ? (registro.fecha instanceof Timestamp 
+          ? registro.fecha.toDate().toLocaleDateString() 
+          : new Date(registro.fecha).toLocaleDateString())
+        : 'Fecha no disponible',
       horaEntrada: registro.horaEntrada || 'N/A',
       horaSalida: registro.horaSalida || 'N/A',
       horasTrabajadas: calcularHorasTrabajadas(registro.horaEntrada, registro.horaSalida)
@@ -131,8 +140,7 @@ const ReporteUno = () => {
     const libro = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(libro, hoja, "Reporte Asistencia");
     
-    // Usar comillas invertidas (`) para la interpolación
-    XLSX.writeFile(`libro, reporte_asistencia_${new Date().toISOString().split('T')[0]}.xlsx`);
+    XLSX.writeFile(`reporte_asistencia_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   // Exportar a PDF
@@ -147,7 +155,7 @@ const ReporteUno = () => {
     
     doc.autoTable({
       startY: 25,
-      head: [['Empleado', 'Fecha', 'Hora Entrada', 'Hora Salida', 'Horas Trabajadas']],
+      head: [['Nombre', 'Fecha', 'Hora Entrada', 'Hora Salida', 'Horas Trabajadas']],
       body: datosReporte.map(fila => [
         fila.nombreEmpleado, 
         fila.fecha, 
@@ -193,7 +201,7 @@ const ReporteUno = () => {
           >
             <option value="todos">Todos los Empleados</option>
             {empleados.map(empleado => (
-              <option key={empleado.id} value={empleado.id}>
+              <option key={empleado.id} value={empleado.nombre}>
                 {empleado.nombre}
               </option>
             ))}
@@ -249,11 +257,11 @@ const ReporteUno = () => {
 
       {datosReporte.length > 0 && (
         <div className="mt-6">
-          <h3 className="text-lg font-semibold mb-4">Resultados del Reporte</h3>
-          <table className="w-full border-collapse">
+          <h3 className="text-xl font-bold mb-4">Reporte Generado</h3>
+          <table className="min-w-full border-collapse">
             <thead>
-              <tr className="bg-gray-100">
-                <th className="border p-2">Empleado</th>
+              <tr>
+                <th className="border p-2">Nombre</th>
                 <th className="border p-2">Fecha</th>
                 <th className="border p-2">Hora Entrada</th>
                 <th className="border p-2">Hora Salida</th>
@@ -262,7 +270,7 @@ const ReporteUno = () => {
             </thead>
             <tbody>
               {datosReporte.map((fila, index) => (
-                <tr key={index} className="hover:bg-gray-50">
+                <tr key={index}>
                   <td className="border p-2">{fila.nombreEmpleado}</td>
                   <td className="border p-2">{fila.fecha}</td>
                   <td className="border p-2">{fila.horaEntrada}</td>

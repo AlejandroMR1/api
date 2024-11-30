@@ -19,7 +19,7 @@ function Attendance() {
     const fetchData = async () => {
       try {
         // Obtener datos de empleados
-        const employeesCollection = collection(firestore, 'empleados');
+        const employeesCollection = collection(firestore, 'attendance');
         const employeesSnapshot = await getDocs(employeesCollection);
         const employeesList = employeesSnapshot.docs.map(doc => ({
           id: doc.id,
@@ -108,26 +108,15 @@ function Attendance() {
         <tbody>
           {mergedData.map((row, index) => (
             <tr key={row.id}>
-              <td>{row.primer_nombre} {row.primer_apellido}</td>
-              <td>{row.primer_apellido}</td>
-              <td>{row.correo}</td>
+              <td>{row.nombre} {row.segundo_nombre}</td>
+              <td>{row.apellido}</td>
+              <td>{row.email}</td>
               <td>{row.telefono}</td>
-              <td>{row.cargo}</td>
+              <td>{row.puesto}</td>
               <td>{row.departamento}</td>
               <td>{new Date().toLocaleDateString('es-CO')}</td>
-              <td>
-                <div className="attendance-select-container">
-                  <select onChange={(e) => handleAttendanceChange(index, e.target.value)}>
-                    <option value="">-</option>
-                    <option value="presente">Presente</option>
-                    <option value="ausente">Ausente</option>
-                    <option value="tardanza">Tarde</option>
-                  </select>
-                  <span className="attendance-icon">
-                    {renderAttendanceIcon(row.attendance)} {}
-                  </span>
-                </div>
-              </td>
+              <td>{row.asistencia}</td>
+
             </tr>
           ))}
         </tbody>
