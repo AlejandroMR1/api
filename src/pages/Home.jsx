@@ -11,7 +11,7 @@ const Home = () => {
             <div className="links-section">
                 <div className="links-grid">
                     <Link to="/attendance" className="link-item">Asistencia</Link>
-                    <Link to="/reportes" className="link-item">Reportes</Link>
+                    <Link to="/reporteuno" className="link-item">Reportes</Link>
                     <Link to="/employees" className="link-item">Empleados</Link>
                 </div>
             </div>

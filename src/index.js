@@ -7,6 +7,7 @@ import Home from "../src/pages/Home"
 import {createBrowserRouter, RouterProvider} from "react-router-dom"
 import Employees from '../src/pages/Employees'
 import Attendance from '../src/pages/Attendance'
+import ReporteUno from './pages/ReporteUno'
 
 
 
@@ -32,6 +33,10 @@ let router = createBrowserRouter([
   {
     path: "/attendance",
     element: <Attendance/>
+  },
+  {
+    path: "/reporteuno",
+    element: <ReporteUno/>
   }
 ])
 

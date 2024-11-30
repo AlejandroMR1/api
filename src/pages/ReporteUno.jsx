@@ -5,7 +5,7 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
-const Reportes = () => {
+const ReporteUno = () => {
   // Estados para el generador de reportes
   const [tipoReporte, setTipoReporte] = useState('mensual');
   const [fechaInicio, setFechaInicio] = useState('');
@@ -13,6 +13,8 @@ const Reportes = () => {
   const [empleados, setEmpleados] = useState([]);
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState('todos');
   const [datosReporte, setDatosReporte] = useState([]);
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState(null);
 
   // Cargar lista de empleados
   useEffect(() => {
@@ -27,6 +29,7 @@ const Reportes = () => {
         setEmpleados(listaEmpleados);
       } catch (error) {
         console.error("Error al cargar empleados:", error);
+        setError("No se pudo cargar la lista de empleados");
       }
     };
 
@@ -35,34 +38,57 @@ const Reportes = () => {
 
   // Generar reporte
   const generarReporte = async () => {
+    // Reiniciar estados de error
+    setError(null);
+    setCargando(true);
+
     try {
       // Validar fechas
       if (!fechaInicio || !fechaFin) {
-        alert('Por favor, selecciona un rango de fechas');
+        setError('Por favor, selecciona un rango de fechas');
+        setCargando(false);
         return;
       }
 
-      // Consulta de asistencia con filtros
+      // Convertir fechas a objetos Date para la consulta
+      const inicioDate = new Date(fechaInicio);
+      const finDate = new Date(fechaFin);
+      // Establecer la hora de fin al final del día
+      finDate.setHours(23, 59, 59, 999);
+
+      // Construir consulta de asistencia con filtros
       const consultaAsistencia = query(
         collection(firestore, 'asistencia'),
-        where('fecha', '>=', new Date(fechaInicio)),
-        where('fecha', '<=', new Date(fechaFin)),
+        where('fecha', '>=', inicioDate),
+        where('fecha', '<=', finDate),
         ...(empleadoSeleccionado !== 'todos' 
           ? [where('empleadoId', '==', empleadoSeleccionado)] 
           : [])
       );
 
       const snapshot = await getDocs(consultaAsistencia);
+      
+      // Verificar si hay registros
+      if (snapshot.empty) {
+        setError('No se encontraron registros para el rango de fechas seleccionado');
+        setDatosReporte([]);
+        setCargando(false);
+        return;
+      }
+
+      // Procesar datos de asistencia
       const datos = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
 
-      // Procesar datos de asistencia
       const reporteProcesado = procesarDatosAsistencia(datos);
       setDatosReporte(reporteProcesado);
+      setCargando(false);
     } catch (error) {
       console.error("Error al generar reporte:", error);
+      setError("Ocurrió un error al generar el reporte");
+      setCargando(false);
     }
   };
 
@@ -70,9 +96,11 @@ const Reportes = () => {
   const procesarDatosAsistencia = (datos) => {
     return datos.map(registro => ({
       nombreEmpleado: registro.nombreEmpleado,
-      fecha: registro.fecha.toDate().toLocaleDateString(),
-      horaEntrada: registro.horaEntrada,
-      horaSalida: registro.horaSalida,
+      fecha: registro.fecha instanceof Date 
+        ? registro.fecha.toLocaleDateString() 
+        : registro.fecha.toDate().toLocaleDateString(),
+      horaEntrada: registro.horaEntrada || 'N/A',
+      horaSalida: registro.horaSalida || 'N/A',
       horasTrabajadas: calcularHorasTrabajadas(registro.horaEntrada, registro.horaSalida)
     }));
   };
@@ -80,12 +108,21 @@ const Reportes = () => {
   // Calcular horas trabajadas
   const calcularHorasTrabajadas = (entrada, salida) => {
     if (!entrada || !salida) return '0';
-    const fechaEntrada = new Date();
-    fechaEntrada.setHours(entrada.split(':')[0], entrada.split(':')[1], 0, 0);
-    
-    const fechaSalida = new Date();
-    fechaSalida.setHours(salida.split(':')[0], salida.split(':')[1], 0, 0);
-    return ((fechaSalida - fechaEntrada) / (1000 * 60 * 60)).toFixed(2);
+    try {
+      const [horaEntrada, minutosEntrada] = entrada.split(':').map(Number);
+      const [horaSalida, minutosSalida] = salida.split(':').map(Number);
+
+      const fechaEntrada = new Date(0, 0, 0, horaEntrada, minutosEntrada);
+      const fechaSalida = new Date(0, 0, 0, horaSalida, minutosSalida);
+      
+      const diferenciaMs = fechaSalida - fechaEntrada;
+      const horas = diferenciaMs / (1000 * 60 * 60);
+      
+      return horas.toFixed(2);
+    } catch (error) {
+      console.error("Error calculando horas:", error);
+      return '0';
+    }
   };
 
   // Exportar a Excel
@@ -93,15 +130,23 @@ const Reportes = () => {
     const hoja = XLSX.utils.json_to_sheet(datosReporte);
     const libro = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(libro, hoja, "Reporte Asistencia");
-    XLSX.writeFile(libro, `reporte_asistencia_${new Date().toISOString().split('T')[0]}.xlsx`);
+    
+    // Usar comillas invertidas (`) para la interpolación
+    XLSX.writeFile(`libro, reporte_asistencia_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   // Exportar a PDF
   const exportarPDF = () => {
-    const doc = new jsPDF();
+    if (datosReporte.length === 0) {
+      alert('No hay datos para exportar');
+      return;
+    }
+
+    const doc = new jsPDF('landscape');
     doc.text("Reporte de Asistencia", 14, 15);
     
     doc.autoTable({
+      startY: 25,
       head: [['Empleado', 'Fecha', 'Hora Entrada', 'Hora Salida', 'Horas Trabajadas']],
       body: datosReporte.map(fila => [
         fila.nombreEmpleado, 
@@ -119,6 +164,12 @@ const Reportes = () => {
     <div className="p-6 bg-white shadow-md rounded-lg">
       <h2 className="text-2xl font-bold mb-4">Generación de Reportes de Asistencia</h2>
       
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+          {error}
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div>
           <label className="block mb-2">Tipo de Reporte</label>
@@ -175,20 +226,21 @@ const Reportes = () => {
       <div className="flex space-x-4">
         <button 
           onClick={generarReporte}
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          disabled={cargando}
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
         >
-          //Generar Reporte
+          {cargando ? 'Generando...' : 'Generar Reporte'}
         </button>
         <button 
           onClick={exportarExcel}
-          disabled={datosReporte.length === 0}
+          disabled={datosReporte.length === 0 || cargando}
           className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 disabled:opacity-50"
         >
-          //Exportar Excel
+          Exportar Excel
         </button>
         <button 
           onClick={exportarPDF}
-          disabled={datosReporte.length === 0}
+          disabled={datosReporte.length === 0 || cargando}
           className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 disabled:opacity-50"
         >
           Exportar PDF
@@ -226,4 +278,4 @@ const Reportes = () => {
   );
 };
 
-export default Reportes;
+export default ReporteUno;
