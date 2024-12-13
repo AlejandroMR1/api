@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import Header from './Header';
 import { collection, query, where, getDocs, Timestamp } from "firebase/firestore";
 import { firestore } from '../firebase';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import './ReporteUno.css'
 
 const ReporteUno = () => {
   // Estados para el generador de reportes
@@ -53,9 +55,13 @@ const ReporteUno = () => {
         return;
       }
 
-      const inicioDate = Timestamp.fromDate(new Date(fechaInicio));
-      const finDate = Timestamp.fromDate(new Date(fechaFin));
-      finDate.seconds += 86399; // Agregar 23:59:59
+      const inicioDate = new Date(fechaInicio);
+      inicioDate.setUTCHours(0, 0, 0, 0);
+
+      const finDate = new Date(fechaFin);
+      finDate.setUTCHours(23, 59, 59, 999);
+   
+      
 
       // Construcción de consulta más flexible
       const consultaBase = [
@@ -140,7 +146,7 @@ const ReporteUno = () => {
     const libro = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(libro, hoja, "Reporte Asistencia");
     
-    XLSX.writeFile(`reporte_asistencia_${new Date().toISOString().split('T')[0]}.xlsx`);
+    XLSX.writeFile(libro, `reporte_asistencia_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   // Exportar a PDF
@@ -169,6 +175,8 @@ const ReporteUno = () => {
   };
 
   return (
+    <>
+    <Header />
     <div className="p-6 bg-white shadow-md rounded-lg">
       <h2 className="text-2xl font-bold mb-4">Generación de Reportes de Asistencia</h2>
       
@@ -283,6 +291,7 @@ const ReporteUno = () => {
         </div>
       )}
     </div>
+    </>
   );
 };
 

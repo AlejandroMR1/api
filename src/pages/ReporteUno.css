@@ -1,0 +1,113 @@
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f9f9f9;
+    margin: 0;
+    padding: 0;
+  }
+  
+  h2, h3 {
+    color: #333;
+  }
+  
+  label {
+    font-weight: bold;
+    color: #555;
+  }
+  
+  /* Estilos para el contenedor principal */
+  .p-6 {
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 1.5rem;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Estilos para botones */
+  button {
+    cursor: pointer;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+    border-radius: 5px;
+  }
+  
+  button:hover:not([disabled]) {
+    transform: scale(1.05);
+  }
+  
+  button:active:not([disabled]) {
+    transform: scale(1);
+  }
+  
+  button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    border-radius: 5px;
+  }
+  
+  /* Colores personalizados para botones */
+  .bg-blue-500:hover {
+    background-color: #005757;
+  }
+  
+  .bg-green-500:hover {
+    background-color: #008888;
+  }
+  
+  .bg-red-500:hover {
+    background-color: #007e2a;
+  }
+  
+  /* Estilos para los inputs */
+  input, select {
+    border: 1px solid #ccc;
+    padding: 0.5rem;
+    border-radius: 4px;
+    width: 100%;
+    transition: border-color 0.2s ease;
+  }
+  
+  input:focus, select:focus {
+    border-color: #3b82f6;
+    outline: none;
+    box-shadow: 0 0 4px rgba(59, 130, 246, 0.3);
+  }
+  
+  /* Estilos para la tabla */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+  }
+  
+  thead {
+    background-color: #f3f4f6;
+  }
+  
+  thead th {
+    font-weight: bold;
+    text-align: left;
+    padding: 0.75rem;
+  }
+  
+  tbody tr:hover {
+    background-color: #e5e7eb;
+  }
+  
+  tbody td {
+    padding: 0.75rem;
+    border: 1px solid #e5e7eb;
+    text-align: left;
+  }
+  
+  /* Estilo para alertas */
+  .bg-red-100 {
+    background-color: #fef2f2;
+    color: #b91c1c;
+    font-weight: bold;
+  }
+  
+  .bg-red-100 .border {
+    border-color: #fca5a5;
+  }
+  
